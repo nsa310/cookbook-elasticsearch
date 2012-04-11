@@ -89,7 +89,7 @@ bash "Move ES service wrapper to #{node.elasticsearch[:dir]}/elasticsearch/bin" 
   user "root"
 
   code <<-EOS
-    tar -xzf /tmp/service.tar.gz
+    tar xzf /tmp/service.tar.gz
     mv --force /tmp/service/* #{node.elasticsearch[:dir]}/elasticsearch/bin/
   EOS
 end
