@@ -73,7 +73,7 @@ end
 
 #Download ES service wrapper
 #
-remote file "/tmp/service.tar.gz" do
+remote_file "/tmp/service.tar.gz" do
   source "http://github.com/elasticsearch/elasticsearch-servicewrapper/tarball/master"
   action :create_if_missing
 end
