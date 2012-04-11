@@ -10,11 +10,6 @@ group node.elasticsearch[:user] do
   action :create
 end
 
-directory "#{node.elasticsearch[:dir]}/elasticsearch" do
-  owner "root"
-  group "root"
-end
-
 user node.elasticsearch[:user] do
   comment "ElasticSearch User"
   home    "#{node.elasticsearch[:dir]}/elasticsearch"
@@ -29,6 +24,11 @@ bash "remove the elasticsearch user home" do
   user    'root'
   code    "rm -rf  #{node.elasticsearch[:dir]}/elasticsearch"
   only_if "test -d #{node.elasticsearch[:dir]}/elasticsearch"
+end
+
+directory "#{node.elasticsearch[:dir]}/elasticsearch" do
+  owner "root"
+  group "root"
 end
 
 # Increase open file limits
