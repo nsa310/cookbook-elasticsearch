@@ -26,27 +26,6 @@ bash "remove the elasticsearch user home" do
   only_if "test -d #{node.elasticsearch[:dir]}/elasticsearch"
 end
 
-# Create ES directories
-#
-%w| conf_path data_path log_path pid_path |.each do |path|
-  directory node.elasticsearch[path.to_sym] do
-    owner node.elasticsearch[:user] and group node.elasticsearch[:user] and mode 0755
-    recursive true
-    action :create
-  end
-end
-
-# Create service
-#
-template "/etc/init.d/elasticsearch" do
-  source "elasticsearch.init.erb"
-  owner 'root' and mode 0755
-end
-service "elasticsearch" do
-  supports :status => true, :restart => true
-  action [ :enable ]
-end
-
 # Increase open file limits
 #
 bash "enable user limits" do
@@ -79,63 +58,87 @@ end
 
 # Move to ES dir
 #
-bash "Move elasticsearch to #{node.elasticsearch[:dir]}/#{elasticsearch}" do
+bash "Move elasticsearch to #{node.elasticsearch[:dir]}/elasticsearch" do
   user "root"
   cwd  "/tmp"
 
   code <<-EOS
     tar xfz /tmp/#{elasticsearch}.tar.gz
-    mv --force /tmp/#{elasticsearch} #{node.elasticsearch[:dir]}
+    mv --force /tmp/#{elasticsearch}/* #{node.elasticsearch[:dir]}/elasticsearch/
   EOS
 
-  creates "#{node.elasticsearch[:dir]}/#{elasticsearch}/lib/#{elasticsearch}.jar"
-  creates "#{node.elasticsearch[:dir]}/#{elasticsearch}/bin/elasticsearch"
+  creates "#{node.elasticsearch[:dir]}/elasticsearch/lib/#{elasticsearch}.jar"
+  creates "#{node.elasticsearch[:dir]}/elasticsearch/bin/elasticsearch"
+end
+
+#Download ES service wrapper
+#
+remote file "/tmp/service.tar.gz" do
+  source "http://github.com/elasticsearch/elasticsearch-servicewrapper/tarball/master"
+  action :create_if_missing
+end
+
+#Move service wrapper
+#
+bash "Move ES service wrapper to #{node.elasticsearch[:dir]}/elasticsearch/bin" do
+  user "root"
+
+  code <<-EOS
+    tar -xzf /tmp/service.tar.gz
+    mv --force /tmp/service/* #{node.elasticsearch[:dir]}/elasticsearch/bin/
+  EOS
+end
+
+#Modify ES init script in service wrapper
+#
+template "#{node.elasticsearch[:dir]}/elasticsearch/bin/service/elasticsearch" do
+  source "elasticsearch.init.erb"
+  owner 'root' and mode 0755
+end
+
+#Modify ES configuration of service wrapper
+#
+template "#{node.elasticsearch[:dir]}/elasticsearch/bin/service/elasticsearch.conf" do
+  source "elasticsearch-service.conf.erb"
+  owner 'root' and mode 0755
+end
+
+# Create service
+#
+bash "Install ES service wrapper from #{node.elasticsearch[:dir]}/elasticsearch/bin/service/elasticsearch" do
+  user "root"
+  code <<-EOS
+    #{node.elasticsearch[:dir]}/elasticsearch/bin/service/elasticsearch install
+  EOS
+end
+
+#Create lock dir
+#
+bash "create ES lock dir" do
+  user "root"
+  code <<-EOS
+     mkdir #{node.elasticsearch[:dir]}/elasticsearch/lock
+  EOS
 end
 
 # Ensure proper permissions
 #
-bash "Ensure proper permissions for #{node.elasticsearch[:dir]}/#{elasticsearch}" do
+bash "Ensure proper permissions for #{node.elasticsearch[:dir]}/elasticsearch" do
   user    "root"
   code    <<-EOS
-    chown -R #{node.elasticsearch[:user]}:#{node.elasticsearch[:user]} #{node.elasticsearch[:dir]}/#{elasticsearch}
-    chmod -R 775 #{node.elasticsearch[:dir]}/#{elasticsearch}
+    chown -R #{node.elasticsearch[:user]}:#{node.elasticsearch[:user]} #{node.elasticsearch[:dir]}/elasticsearch
+    chmod -R 775 #{node.elasticsearch[:dir]}/elasticsearch
   EOS
-end
-
-# Symlink binaries
-#
-%w| elasticsearch plugin |.each do |f|
-    link "/usr/local/bin/#{f}" do
-      owner node.elasticsearch[:user] and group node.elasticsearch[:user]
-      to    "#{node.elasticsearch[:dir]}/#{elasticsearch}/bin/#{f}"
-    end
-end
-
-# Create file with ES environment variables
-#
-template "elasticsearch-env.sh" do
-  path   "#{node.elasticsearch[:conf_path]}/elasticsearch-env.sh"
-  source "elasticsearch-env.sh.erb"
-  owner node.elasticsearch[:user] and group node.elasticsearch[:user] and mode 0755
-
-  notifies :restart, resources(:service => 'elasticsearch')
 end
 
 # Create ES config file
 #
 template "elasticsearch.yml" do
-  path   "#{node.elasticsearch[:conf_path]}/elasticsearch.yml"
+  path   "#{node.elasticsearch[:dir]}/elasticsearch/config/elasticsearch.yml"
   source "elasticsearch.yml.erb"
   owner node.elasticsearch[:user] and group node.elasticsearch[:user] and mode 0755
 
   notifies :restart, resources(:service => 'elasticsearch')
-end
-
-# Symlink current version to main directory
-#
-link "#{node.elasticsearch[:dir]}/elasticsearch" do
-  owner node.elasticsearch[:user] and group node.elasticsearch[:user]
-  to    "#{node.elasticsearch[:dir]}/#{elasticsearch}"
 end
 
 # Add Monit configuration file
