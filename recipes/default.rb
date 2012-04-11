@@ -137,8 +137,6 @@ template "elasticsearch.yml" do
   path   "#{node.elasticsearch[:dir]}/elasticsearch/config/elasticsearch.yml"
   source "elasticsearch.yml.erb"
   owner node.elasticsearch[:user] and group node.elasticsearch[:user] and mode 0755
-
-  notifies :restart, resources(:service => 'elasticsearch')
 end
 
 # Add Monit configuration file
