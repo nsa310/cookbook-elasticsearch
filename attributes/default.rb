@@ -10,9 +10,9 @@ default.elasticsearch[:version]   = "0.19.0"
 #
 default.elasticsearch[:dir]       = "/home"
 default.elasticsearch[:user]      = "elasticsearch"
-default.elasticsearch[:conf_path] = "/home/elasticsearch/config"
-default.elasticsearch[:data_path] = "/home/elasticsearch/data"
-default.elasticsearch[:log_path]  = "/home/elasticsearch/logs"
+default.elasticsearch[:conf_path] = "/home/elasticsearch-#{default.elasticsearch[:version]}/config"
+default.elasticsearch[:data_path] = "/home/elasticsearch-#{default.elasticsearch[:version]}/data"
+default.elasticsearch[:log_path]  = "/home/elasticsearch-#{default.elasticsearch[:version]}/logs"
 default.elasticsearch[:pid_path]  = "/var/run/elasticsearch"
 
 # === MEMORY ===
