@@ -10,6 +10,11 @@ group node.elasticsearch[:user] do
   action :create
 end
 
+directory "#{node.elasticsearch[:dir]}/elasticsearch" do
+  owner "root"
+  group "root"
+end
+
 user node.elasticsearch[:user] do
   comment "ElasticSearch User"
   home    "#{node.elasticsearch[:dir]}/elasticsearch"
