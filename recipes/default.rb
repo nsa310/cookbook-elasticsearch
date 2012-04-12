@@ -41,7 +41,7 @@ bash "Install Elasticsearch" do
   cwd  "/tmp"
 
   code <<-EOS
-    sudo dpkg -i /tmp/#{elasticsearch}.tar.gz
+    sudo dpkg -i /tmp/#{elasticsearch}.deb
   EOS
 end
 
