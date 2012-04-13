@@ -65,3 +65,21 @@ end
 #
 monitrc("elasticsearch", :pidfile => "#{node.elasticsearch[:pid_path]}/#{node.elasticsearch[:node_name].to_s.gsub(/\W/, '_')}.pid") \
   if node.recipes.include?('monit')
+
+# --- Set host name ---
+# Note how this is plain Ruby code, so we can define variables to
+# DRY up our code:
+hostnamef = 'node1.es1.skln.es'
+hostname = 'node1'
+
+file '/etc/hostname' do
+  content "#{hostname}\n"
+end
+
+service 'hostname' do
+  action :restart
+end
+
+file '/etc/hosts' do
+  content "127.0.0.1 #{hostnamef} #{hostname}\n"
+end
